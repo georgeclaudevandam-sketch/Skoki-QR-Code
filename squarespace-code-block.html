@@ -1,0 +1,412 @@
+<!-- Business Card QR Maker: paste this whole snippet into a Squarespace Code Block -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: two-pane workbench. Form on the left, the printed card back and exports on the right; stacks on phones. */
+#bcqr {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --ink: #16202b;
+  --muted: #5b6775;
+  --line: #d9dfe6;
+  --accent: #0f6b6b;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2f0ef;
+  --field: #fbfcfd;
+  --danger: #a33a2c;
+  --card-shadow: 0 1px 2px rgba(22,32,43,.08), 0 8px 24px rgba(22,32,43,.08);
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+#bcqr * { box-sizing: border-box; }
+#bcqr [hidden] { display: none !important; }
+#bcqr {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+}
+#bcqr .wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+#bcqr header { display: grid; gap: 6px; margin-bottom: 24px; }
+#bcqr h1 { color: var(--ink); font-family: var(--f-display); font-weight: 700; font-size: clamp(26px, 4vw, 34px); line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+#bcqr header p { margin: 0; color: var(--muted); max-width: 62ch; }
+#bcqr .grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { #bcqr .grid { grid-template-columns: minmax(0, 1fr); } }
+
+#bcqr .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; min-width: 0; }
+#bcqr .panel h2 { font-family: var(--f-display); font-weight: 500; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
+#bcqr fieldset { border: 0; padding: 0; margin: 0 0 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+#bcqr fieldset:last-of-type { margin-bottom: 0; }
+#bcqr legend { font-family: var(--f-display); font-weight: 500; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 0; margin-bottom: 10px; }
+#bcqr .full { grid-column: 1 / -1; }
+@media (max-width: 480px) { #bcqr fieldset { grid-template-columns: minmax(0, 1fr); } }
+#bcqr label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; min-width: 0; }
+#bcqr label span.hint { font-weight: 400; color: var(--muted); }
+#bcqr input, #bcqr select {
+  font: inherit; font-size: 15px; color: var(--ink); background: var(--field);
+  border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; width: 100%; min-width: 0;
+}
+#bcqr input:focus-visible, #bcqr select:focus-visible, #bcqr button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+#bcqr .example-note { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; margin-bottom: 18px; font-size: 13px; }
+#bcqr .example-note[hidden] { display: none !important; }
+
+#bcqr .side { display: grid; gap: 16px; }
+@media (max-width: 860px) { #bcqr .side { position: static; } }
+
+/* The card back, drawn at US standard 3.5in x 2in */
+#bcqr .card-stage { display: grid; place-items: center; padding: 22px 8px; background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in srgb, var(--line) 35%, transparent) 10px 11px); border-radius: 8px; }
+#bcqr .card {
+  width: 100%; max-width: 420px; aspect-ratio: 3.5 / 2; background: #ffffff; color: #16202b;
+  border-radius: 6px; box-shadow: var(--card-shadow);
+  display: grid; grid-template-columns: 44% minmax(0, 1fr); align-items: center; gap: 6%; padding: 6% 7%;
+}
+#bcqr .card .qr { width: 100%; aspect-ratio: 1; }
+#bcqr .card .qr svg { width: 100%; height: 100%; display: block; }
+#bcqr .card .who { min-width: 0; display: grid; gap: 3px; }
+#bcqr .card .scan { font-family: var(--f-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #5b6775; }
+#bcqr .card .nm { font-family: var(--f-display); font-weight: 700; font-size: clamp(14px, 3.4vw, 19px); line-height: 1.15; overflow-wrap: break-word; }
+#bcqr .card .tt { font-size: 12px; line-height: 1.35; color: #5b6775; overflow-wrap: break-word; }
+#bcqr .dims { font-family: var(--f-mono); font-size: 11px; color: var(--muted); text-align: center; margin-top: 8px; }
+
+#bcqr .row { display: flex; flex-wrap: wrap; gap: 10px; }
+#bcqr .opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+@media (max-width: 400px) { #bcqr .opts { grid-template-columns: minmax(0, 1fr); } }
+#bcqr button {
+  font: inherit; font-weight: 600; font-size: 14px; border-radius: 6px; padding: 10px 14px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+#bcqr button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+#bcqr button:hover { filter: brightness(0.96); }
+#bcqr button.link { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 600; text-decoration: underline; }
+#bcqr .status { font-size: 13px; color: var(--muted); min-height: 1.5em; margin: 10px 0 0; }
+#bcqr .status.err { color: var(--danger); }
+#bcqr .stats { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin-top: 12px; font-variant-numeric: tabular-nums; }
+#bcqr .stats b { color: var(--ink); font-weight: 500; }
+#bcqr .stats .warn { color: var(--danger); }
+
+#bcqr details { border-top: 1px solid var(--line); padding-top: 12px; }
+#bcqr summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+#bcqr pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 10px; overflow-x: auto; margin: 10px 0; white-space: pre; }
+#bcqr .fallback { display: grid; gap: 8px; justify-items: center; margin-top: 12px; }
+#bcqr .fallback img { width: 220px; max-width: 100%; border: 1px solid var(--line); background: #fff; }
+#bcqr .fallback p { margin: 0; font-size: 13px; color: var(--muted); text-align: center; }
+#bcqr .tips { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
+@media (prefers-reduced-motion: reduce) { #bcqr * { transition: none !important; } }
+</style>
+<div id="bcqr"><div class="wrap">
+  <header>
+    <h1>Business Card QR Maker</h1>
+    <p>Fill in your details and download a QR code for the back of your business card. When a client points their phone camera at it, their phone offers to save you as a contact. Your details live inside the code itself, so it works without internet and never expires.</p>
+  </header>
+
+  <div class="grid">
+    <form class="panel" id="bcqr-form" autocomplete="on" novalidate>
+      <div class="example-note" id="bcqr-exampleNote">
+        <span>These are example details. Replace them with your own.</span>
+        <button type="button" class="link" id="bcqr-clearBtn">Clear all fields</button>
+      </div>
+
+      <fieldset>
+        <legend>Name and role</legend>
+        <label>First name <input id="bcqr-first" name="given-name" autocomplete="given-name"></label>
+        <label>Last name <input id="bcqr-last" name="family-name" autocomplete="family-name"></label>
+        <label>Job title <input id="bcqr-title" autocomplete="organization-title"></label>
+        <label>Company <input id="bcqr-org" autocomplete="organization"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Contact</legend>
+        <label>Office phone <input id="bcqr-work" type="tel" autocomplete="tel-national"></label>
+        <label>Mobile phone <input id="bcqr-cell" type="tel" autocomplete="tel"></label>
+        <label class="full">Email <input id="bcqr-email" type="email" autocomplete="email"></label>
+        <label class="full">Website <input id="bcqr-url" type="url" inputmode="url" autocomplete="url"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Office address <span class="hint" style="text-transform:none;letter-spacing:0">(optional)</span></legend>
+        <label class="full">Street <input id="bcqr-street" autocomplete="address-line1"></label>
+        <label>City <input id="bcqr-city" autocomplete="address-level2"></label>
+        <label>State / region <input id="bcqr-region" autocomplete="address-level1"></label>
+        <label>ZIP / postal code <input id="bcqr-postal" autocomplete="postal-code"></label>
+        <label>Country <input id="bcqr-country" autocomplete="country-name"></label>
+      </fieldset>
+    </form>
+
+    <div class="side">
+      <section class="panel" aria-labelledby="bcqr-previewH">
+        <h2 id="bcqr-previewH">Card back preview</h2>
+        <div class="card-stage">
+          <div class="card" id="bcqr-card">
+            <div class="qr" id="bcqr-cardQr"></div>
+            <div class="who">
+              <div class="scan">Scan to save contact</div>
+              <div class="nm" id="bcqr-cardName"></div>
+              <div class="tt" id="bcqr-cardTitle"></div>
+            </div>
+          </div>
+        </div>
+        <div class="dims" id="bcqr-dims">3.5 × 2 in card</div>
+        <div class="stats" id="bcqr-stats"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="bcqr-dlH">
+        <h2 id="bcqr-dlH">Download for printing</h2>
+        <div class="opts">
+          <label>PNG size
+            <select id="bcqr-size">
+              <option value="600">600 px (web, email)</option>
+              <option value="1200" selected>1200 px (print)</option>
+              <option value="2400">2400 px (large print)</option>
+            </select>
+          </label>
+          <label>Code colour
+            <select id="bcqr-color">
+              <option value="#000000" selected>Black (most reliable)</option>
+              <option value="#16202b">Charcoal</option>
+              <option value="#0b3d91">Navy</option>
+              <option value="#0f5c5c">Deep teal</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button type="button" class="primary" id="bcqr-pngBtn">Download PNG</button>
+          <button type="button" id="bcqr-svgBtn">Download SVG</button>
+          <button type="button" id="bcqr-copyBtn">Copy contact text</button>
+        </div>
+        <p class="status" id="bcqr-status" role="status"></p>
+        <div class="fallback" id="bcqr-fallback" hidden>
+          <img id="bcqr-fallbackImg" alt="Your QR code as a PNG image">
+          <p>Downloads aren’t available in this view. Right-click the image and choose “Save image as”, or press and hold it on a phone.</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <details>
+          <summary>Printing tips</summary>
+          <ul class="tips" style="margin-top:10px">
+            <li>Send the SVG to your printer if they accept it. It stays sharp at any size.</li>
+            <li>Keep the white border around the code. Phones need it to find the edges.</li>
+            <li>Print dark on a light background. Light codes on dark cards often fail to scan.</li>
+            <li>Test the printed proof with both an iPhone and an Android phone before ordering.</li>
+          </ul>
+        </details>
+        <details style="margin-top:12px">
+          <summary>What’s inside the code</summary>
+          <pre id="bcqr-vcardText"></pre>
+        </details>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>
+(function () {
+  var FIELDS = ["first","last","title","org","work","cell","email","url","street","city","region","postal","country"];
+  var EXAMPLE = {
+    first: "Jordan", last: "Rivera", title: "Senior Account Manager", org: "Example Company",
+    work: "+1 555 010 2000", cell: "+1 555 010 2471", email: "jordan.rivera@example.com", url: "www.example.com",
+    street: "100 Main Street, Suite 400", city: "Springfield", region: "IL", postal: "62701", country: "USA"
+  };
+  var STORE_KEY = "bcqr-draft-v1";
+  var $ = function (id) { return document.getElementById("bcqr-" + id); };
+  var status = $("status");
+  var current = null; // { text, qr }
+
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
+
+  function esc(v) {
+    return String(v).trim().replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+  }
+  function normUrl(u) {
+    u = u.trim();
+    if (!u) return "";
+    return /^[a-z][a-z0-9+.-]*:/i.test(u) ? u : "https://" + u;
+  }
+
+  function buildVCard(d) {
+    var L = ["BEGIN:VCARD", "VERSION:3.0"];
+    var full = [d.first, d.last].map(function (s) { return s.trim(); }).filter(Boolean).join(" ");
+    L.push("N:" + esc(d.last) + ";" + esc(d.first) + ";;;");
+    L.push("FN:" + esc(full || d.org || "Contact"));
+    if (d.org.trim()) L.push("ORG:" + esc(d.org));
+    if (d.title.trim()) L.push("TITLE:" + esc(d.title));
+    if (d.work.trim()) L.push("TEL;TYPE=WORK,VOICE:" + esc(d.work));
+    if (d.cell.trim()) L.push("TEL;TYPE=CELL:" + esc(d.cell));
+    if (d.email.trim()) L.push("EMAIL;TYPE=INTERNET,WORK:" + esc(d.email));
+    if (d.url.trim()) L.push("URL:" + esc(normUrl(d.url)));
+    if ([d.street, d.city, d.region, d.postal, d.country].some(function (s) { return s.trim(); })) {
+      L.push("ADR;TYPE=WORK:;;" + [d.street, d.city, d.region, d.postal, d.country].map(esc).join(";"));
+    }
+    L.push("END:VCARD");
+    return L.join("\r\n");
+  }
+
+  function read() {
+    var d = {};
+    FIELDS.forEach(function (f) { d[f] = $(f).value || ""; });
+    return d;
+  }
+
+  function makeQr(text) {
+    // Error correction M: tolerates small smudges while keeping modules large on a small card.
+    var qr = qrcode(0, "M");
+    qr.addData(text, "Byte");
+    qr.make();
+    return qr;
+  }
+
+  function svgFor(qr, color, quiet) {
+    var n = qr.getModuleCount(), total = n + quiet * 2, p = "";
+    for (var r = 0; r < n; r++) {
+      for (var c = 0; c < n; c++) {
+        if (qr.isDark(r, c)) {
+          var start = c;
+          while (c + 1 < n && qr.isDark(r, c + 1)) c++;
+          p += "M" + (start + quiet) + " " + (r + quiet) + "h" + (c - start + 1) + "v1h-" + (c - start + 1) + "z";
+        }
+      }
+    }
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + total + " " + total + '" shape-rendering="crispEdges">' +
+      '<rect width="' + total + '" height="' + total + '" fill="#ffffff"/>' +
+      '<path d="' + p + '" fill="' + color + '"/></svg>';
+  }
+
+  function pngBlob(qr, color, px) {
+    var quiet = 4, n = qr.getModuleCount(), total = n + quiet * 2;
+    var scale = Math.max(1, Math.ceil(px / total));
+    var size = scale * total;
+    var cv = document.createElement("canvas");
+    cv.width = cv.height = size;
+    var ctx = cv.getContext("2d");
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = color;
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
+      if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+    }
+    return { canvas: cv, size: size };
+  }
+
+  function render() {
+    var d = read();
+    var text = buildVCard(d);
+    var qr;
+    try { qr = makeQr(text); }
+    catch (e) {
+      status.textContent = "That’s too much text for one code. Shorten the address or remove a field.";
+      status.className = "status err";
+      return;
+    }
+    current = { text: text, qr: qr, data: d };
+    $("cardQr").innerHTML = svgFor(qr, $("color").value, 2);
+    var full = [d.first, d.last].map(function (s) { return s.trim(); }).filter(Boolean).join(" ");
+    $("cardName").textContent = full || "Your name";
+    $("cardTitle").textContent = [d.title.trim(), d.org.trim()].filter(Boolean).join(" · ");
+    $("vcardText").textContent = text;
+    var n = qr.getModuleCount(), bytes = new TextEncoder().encode(text).length;
+    // Aim for modules of at least 0.33 mm so any phone camera reads them at arm's length.
+    var minMm = Math.max(20, Math.ceil((n + 8) * 0.33));
+    var minIn = (minMm / 25.4).toFixed(2).replace(/0$/, "");
+    $("dims").textContent = "3.5 × 2 in card · print the code at least " + minIn + " in (" + minMm + " mm) wide";
+    $("stats").innerHTML =
+      "<span>Grid <b>" + n + "×" + n + "</b></span>" +
+      "<span>Data <b>" + bytes + " bytes</b></span>" +
+      (minMm > 30 ? '<span class="warn">Large code: drop the address or a phone number to make it easier to scan</span>' : "");
+    if (status.classList.contains("err")) { status.textContent = ""; status.className = "status"; }
+    $("fallback").hidden = true;
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(d)); } catch (e) {}
+  }
+
+  function fileBase() {
+    var d = current.data;
+    var s = [d.first, d.last].join(" ").trim() || "contact";
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-qr";
+  }
+
+  var downloadsP = (window.claude && window.claude.use) ? window.claude.use("downloads").catch(function () { return null; }) : Promise.resolve(null);
+
+  function showFallback(dataUrl) {
+    $("fallbackImg").src = dataUrl;
+    $("fallback").hidden = false;
+    status.textContent = "";
+  }
+
+  function save(filename, data, fallbackUrl) {
+    status.className = "status";
+    status.textContent = "Preparing " + filename + "…";
+    return downloadsP.then(function (dl) {
+      if (!dl) {
+        try {
+          var href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: "image/svg+xml" }));
+          var a = document.createElement("a");
+          a.href = href; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(href); }, 4000);
+          status.textContent = "Downloaded " + filename + ".";
+        } catch (e) { showFallback(fallbackUrl); }
+        return;
+      }
+      return dl.save({ filename: filename, data: data }).then(function () {
+        status.textContent = "Saved " + filename + ".";
+      }, function (err) {
+        var code = err && err.code;
+        if (code === "declined") { status.textContent = "Download cancelled."; return; }
+        if (code === "rate_limited") { status.textContent = "A download prompt is already open. Finish that one first."; return; }
+        showFallback(fallbackUrl);
+      });
+    });
+  }
+
+  $("pngBtn").addEventListener("click", function () {
+    if (!current) return;
+    var px = parseInt($("size").value, 10);
+    var out = pngBlob(current.qr, $("color").value, px);
+    var url = out.canvas.toDataURL("image/png");
+    out.canvas.toBlob(function (blob) { save(fileBase() + "-" + out.size + "px.png", blob, url); }, "image/png");
+  });
+
+  $("svgBtn").addEventListener("click", function () {
+    if (!current) return;
+    var svg = svgFor(current.qr, $("color").value, 4);
+    var url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    save(fileBase() + ".svg", svg, url);
+  });
+
+  $("copyBtn").addEventListener("click", function () {
+    if (!current) return;
+    var t = current.text;
+    var done = function () { status.className = "status"; status.textContent = "Contact text copied."; };
+    var fail = function () {
+      var details = $("vcardText").closest("details");
+      details.open = true;
+      var r = document.createRange(); r.selectNodeContents($("vcardText"));
+      var s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      status.className = "status"; status.textContent = "Copy was blocked. The text is selected below; press Ctrl+C or ⌘C.";
+    };
+    try { navigator.clipboard.writeText(t).then(done, fail); } catch (e) { fail(); }
+  });
+
+  $("clearBtn").addEventListener("click", function () {
+    FIELDS.forEach(function (f) { $(f).value = ""; });
+    $("exampleNote").hidden = true;
+    $("first").focus();
+    render();
+  });
+
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) {}
+  var source = saved || EXAMPLE;
+  FIELDS.forEach(function (f) { $(f).value = source[f] || ""; });
+  if (saved) $("exampleNote").hidden = true;
+
+  $("form").addEventListener("input", function () { $("exampleNote").hidden = true; render(); });
+  $("form").addEventListener("submit", function (e) { e.preventDefault(); });
+  $("color").addEventListener("change", render);
+  render();
+
+})();
+</script>
+</div>
