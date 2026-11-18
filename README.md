@@ -4,6 +4,18 @@ A single web page where each employee enters their contact details and downloads
 
 The contact details are stored inside the QR code as a vCard 3.0, so the code works offline and never expires. Nothing anyone types leaves their browser.
 
+## Scanning a business card
+
+The **Scan a card** tab reads someone else's card with a laptop webcam or a phone camera, or from a photo.
+
+- If the card has a QR code with contact details, those are used directly.
+- Otherwise the printed text is read on the device with [Tesseract.js](https://github.com/naptha/tesseract.js) and sorted into name, title, company, phones, email, website and address. The photo never leaves the browser. Check the details before saving, because printed text is read on a best-effort basis.
+- **Save to contacts** downloads a `.vcf` file. Opening it on a phone or computer adds the contact.
+- **Make a QR code from this** copies the details into the QR maker.
+- The page also shows a QR code of the scanned contact, so someone at a laptop can scan it with their phone to add the contact there.
+
+The camera needs the page to be served over `https://` (GitHub Pages and Squarespace both are). The first scan downloads the text reader, about 7 MB, and later scans reuse it.
+
 ## Files
 
 - `index.html` is the complete page. Open it in a browser, or host it anywhere, including GitHub Pages.

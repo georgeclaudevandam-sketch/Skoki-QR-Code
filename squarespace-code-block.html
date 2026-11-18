@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: two-pane workbench. Form on the left, the printed card back and exports on the right; stacks on phones. */
+/* Layout: two-pane workbench with two views. "My QR code": form left, card back and exports right. "Scan a card": camera left, contact right. Stacks on phones. */
 #bcqr {
   --bg: #f3f5f7;
   --surface: #ffffff;
@@ -15,6 +15,7 @@
   --accent-soft: #e2f0ef;
   --field: #fbfcfd;
   --danger: #a33a2c;
+  --stage: #1b242e;
   --card-shadow: 0 1px 2px rgba(22,32,43,.08), 0 8px 24px rgba(22,32,43,.08);
   --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
@@ -31,9 +32,13 @@
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-#bcqr header { display: grid; gap: 6px; margin-bottom: 24px; }
+#bcqr header { display: grid; gap: 6px; margin-bottom: 18px; }
 #bcqr h1 { color: var(--ink); font-family: var(--f-display); font-weight: 700; font-size: clamp(26px, 4vw, 34px); line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
 #bcqr header p { margin: 0; color: var(--muted); max-width: 62ch; }
+#bcqr .tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+#bcqr .tabs a { font-weight: 600; font-size: 14px; color: var(--muted); text-decoration: none; padding: 8px 14px; border-radius: 5px; }
+#bcqr .tabs a[aria-current="page"] { background: var(--accent); color: var(--accent-ink); }
+#bcqr .tabs a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 #bcqr .grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
 @media (max-width: 860px) { #bcqr .grid { grid-template-columns: minmax(0, 1fr); } }
 
@@ -50,7 +55,7 @@
   font: inherit; font-size: 15px; color: var(--ink); background: var(--field);
   border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; width: 100%; min-width: 0;
 }
-#bcqr input:focus-visible, #bcqr select:focus-visible, #bcqr button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+#bcqr input:focus-visible, #bcqr select:focus-visible, #bcqr button:focus-visible, #bcqr .filebtn:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
 #bcqr .example-note { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; margin-bottom: 18px; font-size: 13px; }
 #bcqr .example-note[hidden] { display: none !important; }
 
@@ -75,13 +80,16 @@
 #bcqr .row { display: flex; flex-wrap: wrap; gap: 10px; }
 #bcqr .opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
 @media (max-width: 400px) { #bcqr .opts { grid-template-columns: minmax(0, 1fr); } }
-#bcqr button {
+#bcqr button, #bcqr .filebtn {
   font: inherit; font-weight: 600; font-size: 14px; border-radius: 6px; padding: 10px 14px; cursor: pointer;
-  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); line-height: 1.3;
 }
 #bcqr button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-#bcqr button:hover { filter: brightness(0.96); }
+#bcqr button:hover, #bcqr .filebtn:hover { filter: brightness(0.96); }
+#bcqr button:disabled { opacity: .55; cursor: default; filter: none; }
 #bcqr button.link { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 600; text-decoration: underline; }
+#bcqr .filebtn { position: relative; display: inline-flex; align-items: center; }
+#bcqr .filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; padding: 0; }
 #bcqr .status { font-size: 13px; color: var(--muted); min-height: 1.5em; margin: 10px 0 0; }
 #bcqr .status.err { color: var(--danger); }
 #bcqr .stats { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin-top: 12px; font-variant-numeric: tabular-nums; }
@@ -95,15 +103,36 @@
 #bcqr .fallback img { width: 220px; max-width: 100%; border: 1px solid var(--line); background: #fff; }
 #bcqr .fallback p { margin: 0; font-size: 13px; color: var(--muted); text-align: center; }
 #bcqr .tips { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
+
+/* Scan view */
+#bcqr .viewer { position: relative; width: 100%; aspect-ratio: 4 / 3; max-width: 100%; background: var(--stage); border-radius: 8px; overflow: hidden; display: grid; place-items: center; margin-bottom: 14px; }
+#bcqr .viewer video, #bcqr .viewer img { width: 100%; height: 100%; object-fit: contain; display: block; }
+#bcqr .viewer .guide { position: absolute; left: 50%; top: 50%; width: 78%; aspect-ratio: 3.5 / 2; transform: translate(-50%, -50%); border: 2px dashed rgba(255,255,255,.75); border-radius: 8px; pointer-events: none; }
+#bcqr .viewer .empty { color: #c9d3dc; text-align: center; padding: 16px; font-size: 14px; max-width: 34ch; display: grid; gap: 6px; justify-items: center; }
+#bcqr .viewer .empty svg { width: 56px; height: 56px; opacity: .8; }
+#bcqr .progress { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 10px; }
+#bcqr .progress span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+#bcqr .source { display: inline-block; font-family: var(--f-mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; background: var(--accent-soft); color: var(--ink); border-radius: 4px; padding: 3px 8px; margin-bottom: 14px; }
+#bcqr .phone-qr { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 16px; align-items: center; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+#bcqr .phone-qr .box { background: #fff; border-radius: 6px; padding: 6px; border: 1px solid var(--line); }
+#bcqr .phone-qr .box svg { display: block; width: 100%; height: auto; }
+#bcqr .phone-qr p { margin: 0; font-size: 13px; color: var(--muted); }
+#bcqr .phone-qr b { color: var(--ink); display: block; margin-bottom: 2px; font-size: 14px; }
+@media (max-width: 400px) { #bcqr .phone-qr { grid-template-columns: 110px minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) { #bcqr * { transition: none !important; } }
 </style>
 <div id="bcqr"><div class="wrap">
   <header>
     <h1>Business Card QR Maker</h1>
-    <p>Fill in your details and download a QR code for the back of your business card. When a client points their phone camera at it, their phone offers to save you as a contact. Your details live inside the code itself, so it works without internet and never expires.</p>
+    <p>Make a QR code for the back of your business card, or scan someone else’s card to save them as a contact. Scanned cards can also be turned into a QR code.</p>
   </header>
 
-  <div class="grid">
+  <nav class="tabs" aria-label="Views">
+    <a href="#make" id="bcqr-tabMake">My QR code</a>
+    <a href="#scan" id="bcqr-tabScan">Scan a card</a>
+  </nav>
+
+  <div class="grid" id="bcqr-viewMake">
     <form class="panel" id="bcqr-form" autocomplete="on" novalidate>
       <div class="example-note" id="bcqr-exampleNote">
         <span>These are example details. Replace them with your own.</span>
@@ -201,9 +230,80 @@
       </section>
     </div>
   </div>
+
+  <div class="grid" id="bcqr-viewScan" hidden>
+    <section class="panel" aria-labelledby="bcqr-camH">
+      <h2 id="bcqr-camH">Card photo</h2>
+      <div class="viewer" id="bcqr-viewer">
+        <div class="empty" id="bcqr-viewerEmpty">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="12" width="38" height="26" rx="3"/><path d="M11 20h12M11 25h18M11 30h9"/><rect x="31" y="19" width="7" height="7"/></svg>
+          <span>Start the camera and hold a card up to it, or take a photo of the card.</span>
+        </div>
+        <video id="bcqr-video" playsinline muted hidden></video>
+        <img id="bcqr-shot" alt="The card photo being read" hidden>
+        <div class="guide" id="bcqr-guide" hidden></div>
+      </div>
+      <div class="row">
+        <button type="button" class="primary" id="bcqr-camBtn">Start camera</button>
+        <button type="button" class="primary" id="bcqr-snapBtn" hidden>Capture card</button>
+        <label class="filebtn" id="bcqr-photoLbl">Take or choose a photo<input type="file" id="bcqr-photo" accept="image/*"></label>
+        <button type="button" id="bcqr-camStopBtn" hidden>Stop camera</button>
+      </div>
+      <div class="progress" id="bcqr-progress" hidden><span id="bcqr-progressBar"></span></div>
+      <p class="status" id="bcqr-scanStatus" role="status"></p>
+      <ul class="tips" style="margin-top:12px">
+        <li>Lay the card flat in good light and fill most of the frame.</li>
+        <li>If the card has a QR code, the details come straight from it.</li>
+        <li>Always check the details before saving. Printed text is read on a best-effort basis.</li>
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="bcqr-scH">
+      <h2 id="bcqr-scH">Contact from the card</h2>
+      <div class="source" id="bcqr-scanSource" hidden></div>
+      <form id="bcqr-sform" autocomplete="off" novalidate>
+        <fieldset>
+          <legend>Name and role</legend>
+          <label>First name <input id="bcqr-s_first"></label>
+          <label>Last name <input id="bcqr-s_last"></label>
+          <label>Job title <input id="bcqr-s_title"></label>
+          <label>Company <input id="bcqr-s_org"></label>
+        </fieldset>
+        <fieldset>
+          <legend>Contact</legend>
+          <label>Office phone <input id="bcqr-s_work" type="tel"></label>
+          <label>Mobile phone <input id="bcqr-s_cell" type="tel"></label>
+          <label class="full">Email <input id="bcqr-s_email" type="email"></label>
+          <label class="full">Website <input id="bcqr-s_url" type="url" inputmode="url"></label>
+        </fieldset>
+        <fieldset>
+          <legend>Address</legend>
+          <label class="full">Street <input id="bcqr-s_street"></label>
+          <label>City <input id="bcqr-s_city"></label>
+          <label>State / region <input id="bcqr-s_region"></label>
+          <label>ZIP / postal code <input id="bcqr-s_postal"></label>
+          <label>Country <input id="bcqr-s_country"></label>
+        </fieldset>
+      </form>
+      <div class="row" style="margin-top:18px">
+        <button type="button" class="primary" id="bcqr-saveContactBtn">Save to contacts</button>
+        <button type="button" id="bcqr-useBtn">Make a QR code from this</button>
+      </div>
+      <p class="status" id="bcqr-contactStatus" role="status"></p>
+      <div class="phone-qr" id="bcqr-phoneQr" hidden>
+        <div class="box" id="bcqr-phoneQrBox"></div>
+        <p><b>Add it to your phone</b>Point your phone’s camera at this code and tap the contact that pops up.</p>
+      </div>
+      <details style="margin-top:16px" id="bcqr-rawWrap" hidden>
+        <summary>Text read from the card</summary>
+        <pre id="bcqr-rawText"></pre>
+      </details>
+    </section>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
 (function () {
   var FIELDS = ["first","last","title","org","work","cell","email","url","street","city","region","postal","country"];
@@ -213,9 +313,12 @@
     street: "100 Main Street, Suite 400", city: "Springfield", region: "IL", postal: "62701", country: "USA"
   };
   var STORE_KEY = "bcqr-draft-v1";
+  var TESSERACT_SRC = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+  var TESSDATA = "https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int";
   var $ = function (id) { return document.getElementById("bcqr-" + id); };
   var status = $("status");
   var current = null; // { text, qr }
+  var inClaude = !!(window.claude && window.claude.use);
 
   qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
 
@@ -246,9 +349,9 @@
     return L.join("\r\n");
   }
 
-  function read() {
+  function read(prefix) {
     var d = {};
-    FIELDS.forEach(function (f) { d[f] = $(f).value || ""; });
+    FIELDS.forEach(function (f) { d[f] = $((prefix || "") + f).value || ""; });
     return d;
   }
 
@@ -321,13 +424,13 @@
     try { localStorage.setItem(STORE_KEY, JSON.stringify(d)); } catch (e) {}
   }
 
-  function fileBase() {
-    var d = current.data;
-    var s = [d.first, d.last].join(" ").trim() || "contact";
-    return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-qr";
+  function slug(d) {
+    var s = [d.first, d.last].join(" ").trim() || d.org.trim() || "contact";
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "contact";
   }
+  function fileBase() { return slug(current.data) + "-qr"; }
 
-  var downloadsP = (window.claude && window.claude.use) ? window.claude.use("downloads").catch(function () { return null; }) : Promise.resolve(null);
+  var downloadsP = inClaude ? window.claude.use("downloads").catch(function () { return null; }) : Promise.resolve(null);
 
   function showFallback(dataUrl) {
     $("fallbackImg").src = dataUrl;
@@ -335,18 +438,22 @@
     status.textContent = "";
   }
 
-  function save(filename, data, fallbackUrl) {
+  // Outside a Claude viewer (your own website) a normal browser download works.
+  function linkDownload(filename, data, type) {
+    var href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: type }));
+    var a = document.createElement("a");
+    a.href = href; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(href); }, 4000);
+  }
+
+  function save(filename, data, fallbackUrl, type) {
     status.className = "status";
     status.textContent = "Preparing " + filename + "…";
     return downloadsP.then(function (dl) {
       if (!dl) {
-        try {
-          var href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: "image/svg+xml" }));
-          var a = document.createElement("a");
-          a.href = href; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
-          setTimeout(function () { URL.revokeObjectURL(href); }, 4000);
-          status.textContent = "Downloaded " + filename + ".";
-        } catch (e) { showFallback(fallbackUrl); }
+        if (inClaude) { showFallback(fallbackUrl); return; }
+        try { linkDownload(filename, data, type); status.textContent = "Downloaded " + filename + "."; }
+        catch (e) { showFallback(fallbackUrl); }
         return;
       }
       return dl.save({ filename: filename, data: data }).then(function () {
@@ -365,14 +472,14 @@
     var px = parseInt($("size").value, 10);
     var out = pngBlob(current.qr, $("color").value, px);
     var url = out.canvas.toDataURL("image/png");
-    out.canvas.toBlob(function (blob) { save(fileBase() + "-" + out.size + "px.png", blob, url); }, "image/png");
+    out.canvas.toBlob(function (blob) { save(fileBase() + "-" + out.size + "px.png", blob, url, "image/png"); }, "image/png");
   });
 
   $("svgBtn").addEventListener("click", function () {
     if (!current) return;
     var svg = svgFor(current.qr, $("color").value, 4);
     var url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-    save(fileBase() + ".svg", svg, url);
+    save(fileBase() + ".svg", svg, url, "image/svg+xml");
   });
 
   $("copyBtn").addEventListener("click", function () {
@@ -396,6 +503,426 @@
     render();
   });
 
+  // ---- Reading contact details out of what a card says ----
+  var EMPTY = function () { var o = {}; FIELDS.forEach(function (f) { o[f] = ""; }); return o; };
+
+  function unesc(v) { return v.replace(/\\n/gi, "\n").replace(/\\([,;\\])/g, "$1").trim(); }
+  function splitUnesc(v, sep) {
+    var out = [], cur = "";
+    for (var i = 0; i < v.length; i++) {
+      if (v[i] === "\\" && i + 1 < v.length) { cur += v[i] + v[i + 1]; i++; }
+      else if (v[i] === sep) { out.push(unesc(cur)); cur = ""; }
+      else cur += v[i];
+    }
+    out.push(unesc(cur));
+    return out;
+  }
+
+  // A QR code on someone else's card may already hold a vCard or a MECARD.
+  function parseVCard(text) {
+    var d = EMPTY();
+    var lines = text.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "").split(/\r?\n/);
+    lines.forEach(function (line) {
+      var i = line.indexOf(":"); if (i < 0) return;
+      var head = line.slice(0, i).toUpperCase(), val = line.slice(i + 1);
+      var key = head.split(";")[0].replace(/^ITEM\d+\./, "");
+      if (key === "N") { var n = splitUnesc(val, ";"); d.last = n[0] || ""; d.first = n[1] || ""; }
+      else if (key === "FN" && !d.first && !d.last) { var fn = unesc(val).split(/\s+/); d.last = fn.length > 1 ? fn.pop() : ""; d.first = fn.join(" "); }
+      else if (key === "ORG") d.org = splitUnesc(val, ";").filter(Boolean).join(", ");
+      else if (key === "TITLE") d.title = unesc(val);
+      else if (key === "TEL") {
+        if (/FAX/.test(head)) return;
+        if (/CELL|MOBILE/.test(head)) { if (!d.cell) d.cell = unesc(val); }
+        else if (!d.work) d.work = unesc(val);
+        else if (!d.cell) d.cell = unesc(val);
+      }
+      else if (key === "EMAIL" && !d.email) d.email = unesc(val);
+      else if (key === "URL" && !d.url) d.url = unesc(val);
+      else if (key === "ADR" && !d.street) {
+        var a = splitUnesc(val, ";");
+        d.street = [a[1], a[2]].filter(Boolean).join(", "); d.city = a[3] || ""; d.region = a[4] || ""; d.postal = a[5] || ""; d.country = a[6] || "";
+      }
+    });
+    return d;
+  }
+
+  function parseMeCard(text) {
+    var d = EMPTY();
+    splitUnesc(text.replace(/^MECARD:/i, ""), ";").forEach(function (part) {
+      var i = part.indexOf(":"); if (i < 0) return;
+      var k = part.slice(0, i).toUpperCase(), v = part.slice(i + 1).trim();
+      if (k === "N") { var n = v.split(","); d.last = (n[0] || "").trim(); d.first = (n[1] || "").trim(); }
+      else if (k === "TEL") { if (!d.work) d.work = v; else if (!d.cell) d.cell = v; }
+      else if (k === "EMAIL" && !d.email) d.email = v;
+      else if (k === "URL" && !d.url) d.url = v;
+      else if (k === "ORG") d.org = v;
+      else if (k === "ADR") d.street = v;
+      else if (k === "NOTE" && !d.title) d.title = v;
+    });
+    return d;
+  }
+
+  var TITLE_WORDS = /\b(manager|director|president|ceo|cfo|coo|cto|cmo|vp|vice|founder|co-founder|owner|partner|principal|consultant|specialist|coordinator|analyst|agent|broker|representative|rep|associate|lead|head|chief|officer|supervisor|executive|designer|developer|engineer|architect|administrator|accountant|attorney|lawyer|counsel|advisor|adviser|sales|marketing|operations|realtor|technician|estimator|superintendent|foreman|assistant|secretary|treasurer|chair|chairman|chairwoman|captain)\b/i;
+  var ORG_WORDS = /\b(inc|llc|l\.l\.c|ltd|limited|co|corp|corporation|company|group|holdings|partners|associates|solutions|services|systems|technologies|technology|industries|enterprises|consulting|agency|studio|bank|realty|construction|marine|foundation|university|college|hospital|clinic|labs?|gmbh|plc|pty|s\.?a\.?|b\.?v\.?)\b\.?/i;
+  var FREE_MAIL = /^(gmail|googlemail|yahoo|hotmail|outlook|live|icloud|me|aol|proton|protonmail|msn|comcast)\./i;
+  var US_STATES = "AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC BC AB SK MB ON QC NB NS PE NL YT NT NU".split(" ");
+  var STREET_WORDS = /\b(street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|lane|ln|way|court|ct|place|pl|parkway|pkwy|highway|hwy|suite|ste|floor|fl|unit|po box|p\.o\. box|square|sq|terrace|circle|cir)\b\.?/i;
+
+  function cleanPhone(s) { return s.replace(/[^\d+()\-. x]/gi, "").replace(/\s+/g, " ").trim(); }
+
+  // Turn the plain text read from a card photo into contact fields. Best effort: the person reviews it after.
+  function parseCardText(text) {
+    var d = EMPTY();
+    var lines = [];
+    text.split(/\r?\n/).forEach(function (l) {
+      l.split(/\s+[|•·]+\s+|\s{3,}/).forEach(function (p) {
+        p = p.replace(/[|•·]+/g, " ").replace(/\s+/g, " ").trim();
+        if (p.length > 1) lines.push(p);
+      });
+    });
+    var used = {};
+
+    lines.forEach(function (l, i) {
+      // OCR often turns the dot in "first.last@" into a space when the address starts the line
+      l = l.replace(/^((?:e-?mail|e)\s*[:.]?\s*)?([a-z][a-z0-9_-]*) ([a-z][a-z0-9._-]*@)/i, function (_, lab, a, b) { return (lab || "") + a + "." + b; });
+      var em = l.match(/[A-Z0-9._%+-]+\s?@\s?[A-Z0-9.-]+\.[A-Z]{2,}/i);
+      if (em && !d.email) { d.email = em[0].replace(/\s/g, "").toLowerCase(); used[i] = true; l = l.replace(em[0], " "); }
+      var web = l.match(/\b((?:https?:\/\/)?(?:www\.)[A-Z0-9-]+(?:\.[A-Z0-9-]+)+(?:\/\S*)?|(?:https?:\/\/)[A-Z0-9-]+(?:\.[A-Z0-9-]+)+(?:\/\S*)?|[A-Z0-9-]+\.(?:com|net|org|io|co|us|biz|info|ca|uk|co\.uk|au|de)\b(?:\/\S*)?)/i);
+      if (web && !d.url && !/@/.test(web[0])) { d.url = web[0].replace(/[.,;]$/, "").toLowerCase(); used[i] = true; }
+
+      // Phone numbers, with a label before them when the card has one (M:, Mobile, Cell, T:, Office, Fax...)
+      var re = /(?:\b(mobile|mob|cell|cel|c|m|tel|telephone|phone|ph|p|t|office|o|direct|d|main|work|w|fax|f)\b\.?\s*[:.]?\s*)?(\+?\(?\d[\d\s().\-]{6,}\d)(?:\s*(?:x|ext\.?)\s*\d+)?/gi;
+      var m;
+      while ((m = re.exec(l))) {
+        var digits = m[2].replace(/\D/g, "");
+        if (digits.length < 7 || digits.length > 15) continue;
+        if (/^\d{5}(-\d{4})?$/.test(m[2].trim())) continue;
+        var label = (m[1] || "").toLowerCase();
+        var before = l.slice(0, m.index).toLowerCase();
+        if (/^f/.test(label) || (!label && /fax\W*$/.test(before))) { used[i] = true; continue; }
+        var num = cleanPhone(m[0].replace(m[1] || "", "").replace(/^\s*[:.]\s*/, ""));
+        var isCell = /^(mobile|mob|cell|cel|c|m)$/.test(label) || (!label && /(mobile|cell)\W*$/.test(before));
+        if (isCell && !d.cell) d.cell = num;
+        else if (!isCell && !d.work) d.work = num;
+        else if (!d.cell) d.cell = num;
+        used[i] = true;
+      }
+    });
+
+    // Address: a line with a state/province and postal code, and the street line above it.
+    lines.forEach(function (l, i) {
+      if (d.postal) return;
+      var us = l.match(/^(.*?)[,\s]+([A-Z]{2})\.?\s+(\d{5}(?:-\d{4})?)\b(.*)$/);
+      var ca = l.match(/^(.*?)[,\s]+([A-Z]{2})\.?\s+([A-Z]\d[A-Z]\s?\d[A-Z]\d)\b(.*)$/i);
+      var uk = l.match(/^(.*?)[,\s]+([A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2})\b(.*)$/);
+      var hit = us && US_STATES.indexOf(us[2]) >= 0 ? us : (ca && US_STATES.indexOf(ca[2].toUpperCase()) >= 0 ? ca : null);
+      if (hit) {
+        var cityPart = hit[1].replace(/,\s*$/, "");
+        // "123 Main St, Springfield, IL 62701" all on one line
+        var parts = cityPart.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+        if (parts.length > 1) { d.city = parts.pop(); d.street = parts.join(", "); }
+        else d.city = cityPart;
+        d.region = hit[2].toUpperCase(); d.postal = hit[3].toUpperCase();
+        var rest = (hit[4] || "").replace(/^[\s,]+/, "").trim();
+        if (/^(usa|us|united states|canada)$/i.test(rest)) d.country = rest;
+        used[i] = true;
+      } else if (uk && STREET_WORDS.test(lines[i - 1] || "")) {
+        d.city = uk[1].replace(/,\s*$/, "").split(",").pop().trim(); d.postal = uk[2].toUpperCase(); used[i] = true;
+      } else return;
+      if (!d.street && i > 0 && !used[i - 1] && (/^\d/.test(lines[i - 1]) || STREET_WORDS.test(lines[i - 1]))) {
+        d.street = lines[i - 1].replace(/,\s*$/, ""); used[i - 1] = true;
+        if (i > 1 && !used[i - 2] && /^(suite|ste|floor|fl|unit|#)\b/i.test(lines[i - 1]) && /^\d/.test(lines[i - 2])) {
+          d.street = lines[i - 2].replace(/,\s*$/, "") + ", " + d.street; used[i - 2] = true;
+        }
+      }
+      var next = lines[i + 1] || "";
+      if (!d.country && /^(usa|u\.s\.a\.?|united states|canada|united kingdom|uk)$/i.test(next)) { d.country = next; used[i + 1] = true; }
+    });
+    if (!d.street) {
+      lines.forEach(function (l, i) {
+        if (!d.street && !used[i] && /^\d+\s+\S+/.test(l) && STREET_WORDS.test(l)) { d.street = l; used[i] = true; }
+      });
+    }
+
+    var rest = lines.map(function (l, i) { return used[i] ? null : l; });
+    var bareName = function (l) { return l.replace(/^(dr|mr|mrs|ms|miss|prof)\.?\s+/i, "").replace(/,.*$/, "").trim(); };
+    var isNameLike = function (l) {
+      if (!l || /\d|@/.test(l)) return false;
+      var b = bareName(l);
+      if (TITLE_WORDS.test(b) || ORG_WORDS.test(b)) return false;
+      var w = b.split(" ");
+      // The last name must start with a capital; OCR sometimes lowercases the very first letter
+      return w.length >= 2 && w.length <= 4 && /^[A-ZÀ-Þ]/.test(w[w.length - 1]) &&
+        w.every(function (x) { return /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'’.\-]*$/.test(x); });
+    };
+
+    // Company: a line with a company word, else the email domain
+    var tidyCaps = function (l) { return l === l.toUpperCase() ? l.replace(/\b([A-Z])([A-Z]+)\b/g, function (_, a, b) { return /^(LLC|INC|LTD|PLC|USA|CPA)$/.test(a + b) ? a + b : a + b.toLowerCase(); }) : l; };
+    rest.forEach(function (l, i) { if (l && !d.org && ORG_WORDS.test(l) && !TITLE_WORDS.test(l.replace(ORG_WORDS, ""))) { d.org = tidyCaps(l); rest[i] = null; } });
+
+    // Name: the first line that looks like a person's name; prefer one that matches the email
+    var local = (d.email.split("@")[0] || "").toLowerCase();
+    var nameIdx = -1;
+    rest.forEach(function (l, i) {
+      if (!isNameLike(l)) return;
+      var first = bareName(l).split(" ")[0].toLowerCase();
+      var prev = nameIdx < 0 ? "" : bareName(rest[nameIdx]).split(" ")[0].toLowerCase();
+      if (nameIdx < 0 || (local && local.indexOf(first) >= 0 && local.indexOf(prev) < 0)) nameIdx = i;
+    });
+    if (nameIdx >= 0) {
+      var nm = bareName(rest[nameIdx]).split(" ");
+      nm = nm.map(function (x) { return x.charAt(0).toUpperCase() + x.slice(1); });
+      d.last = nm.pop(); d.first = nm.join(" "); rest[nameIdx] = null;
+      // A title often sits right after the name on the same line ("Jane Doe, CPA") or the next line
+    }
+
+    // Title: a line with a role word, preferring the one right after the name
+    var tIdx = -1;
+    rest.forEach(function (l, i) { if (l && TITLE_WORDS.test(l) && (tIdx < 0 || i === nameIdx + 1)) tIdx = i; });
+    if (tIdx >= 0) { d.title = rest[tIdx]; rest[tIdx] = null; }
+
+    if (!d.org) {
+      // A remaining line in capitals or a short leftover line is often the company name
+      var cand = rest.filter(function (l) { return l && !/\d/.test(l) && l.length <= 40; });
+      var caps = cand.filter(function (l) { return l === l.toUpperCase() && /[A-Z]{3}/.test(l); });
+      if (caps.length) d.org = tidyCaps(caps[0]);
+      else if (d.email && !FREE_MAIL.test(d.email.split("@")[1] || "")) {
+        var dom = d.email.split("@")[1].split(".")[0];
+        d.org = dom.charAt(0).toUpperCase() + dom.slice(1);
+      } else if (cand.length) d.org = cand[0];
+    }
+    return d;
+  }
+
+  // ---- Scan a card ----
+  var scanStatus = $("scanStatus");
+  var stream = null, busy = false, tessWorkerP = null;
+  var sampleP = inClaude ? window.claude.use("sample").catch(function () { return null; }) : Promise.resolve(null);
+
+  function say(msg, isErr) { scanStatus.textContent = msg; scanStatus.className = "status" + (isErr ? " err" : ""); }
+  function progress(frac) {
+    $("progress").hidden = frac == null;
+    $("progressBar").style.width = Math.round((frac || 0) * 100) + "%";
+  }
+
+  function stopCamera() {
+    if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+    stream = null;
+    $("video").hidden = true; $("guide").hidden = true;
+    $("snapBtn").hidden = true; $("camStopBtn").hidden = true; $("camBtn").hidden = false;
+    if ($("shot").hidden) $("viewerEmpty").hidden = false;
+  }
+
+  $("camBtn").addEventListener("click", function () {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      say("This browser can’t use the camera here. Use “Take or choose a photo” instead.", true);
+      return;
+    }
+    say("Starting the camera…");
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
+      .then(function (s) {
+        stream = s;
+        var v = $("video");
+        v.srcObject = s; v.hidden = false; v.play();
+        $("shot").hidden = true; $("viewerEmpty").hidden = true; $("guide").hidden = false;
+        $("camBtn").hidden = true; $("snapBtn").hidden = false; $("camStopBtn").hidden = false;
+        say("Hold the card inside the frame, then press Capture card.");
+      }, function (err) {
+        var denied = err && (err.name === "NotAllowedError" || err.name === "SecurityError");
+        say(denied ? "Camera access was blocked. Allow the camera in your browser, or use “Take or choose a photo”."
+                   : "No camera was found. Use “Take or choose a photo” instead.", true);
+      });
+  });
+  $("camStopBtn").addEventListener("click", function () { stopCamera(); say(""); });
+
+  $("snapBtn").addEventListener("click", function () {
+    var v = $("video");
+    if (!v.videoWidth) return;
+    var cv = document.createElement("canvas");
+    cv.width = v.videoWidth; cv.height = v.videoHeight;
+    cv.getContext("2d").drawImage(v, 0, 0);
+    stopCamera();
+    processCard(cv);
+  });
+
+  $("photo").addEventListener("change", function () {
+    var file = this.files && this.files[0];
+    this.value = "";
+    if (!file) return;
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () {
+      var max = 2200, k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      var cv = document.createElement("canvas");
+      cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(url);
+      stopCamera();
+      processCard(cv);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); say("That file couldn’t be opened as a picture. Try a JPEG or PNG photo.", true); };
+    img.src = url;
+  });
+
+  function findQr(cv) {
+    if (!window.jsQR) return null;
+    var k = Math.min(1, 1400 / Math.max(cv.width, cv.height));
+    var w = Math.round(cv.width * k), h = Math.round(cv.height * k);
+    var c2 = document.createElement("canvas"); c2.width = w; c2.height = h;
+    var ctx = c2.getContext("2d"); ctx.drawImage(cv, 0, 0, w, h);
+    var hit = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "attemptBoth" });
+    return hit ? hit.data : null;
+  }
+
+  function loadScript(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement("script");
+      s.src = src; s.onload = res; s.onerror = function () { rej(new Error("load")); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function ocr(cv) {
+    if (!tessWorkerP) {
+      tessWorkerP = (window.Tesseract ? Promise.resolve() : loadScript(TESSERACT_SRC)).then(function () {
+        return Tesseract.createWorker("eng", 1, {
+          langPath: TESSDATA,
+          logger: function (m) {
+            if (m.status === "recognizing text") { say("Reading the text on the card…"); progress(0.3 + 0.7 * m.progress); }
+            else if (/load|initializ/.test(m.status || "")) { say("Getting the text reader ready (first time only)…"); progress(0.3 * (m.progress || 0)); }
+          }
+        });
+      });
+      tessWorkerP.catch(function () { tessWorkerP = null; });
+    }
+    return tessWorkerP.then(function (worker) {
+      // Enlarge small photos so the small print on cards reads better.
+      var k = Math.max(1, 1400 / cv.width), c2 = cv;
+      if (k > 1) {
+        c2 = document.createElement("canvas");
+        c2.width = Math.round(cv.width * k); c2.height = Math.round(cv.height * k);
+        c2.getContext("2d").drawImage(cv, 0, 0, c2.width, c2.height);
+      }
+      return worker.recognize(c2).then(function (r) { return r.data.text || ""; });
+    });
+  }
+
+  var CLAUDE_PROMPT = "The image is a photo of a business card. Read it and reply with only a JSON object with exactly these string keys: " +
+    "first, last, title, org, work, cell, email, url, street, city, region, postal, country. " +
+    "work is the office, main or direct phone number and cell is the mobile number; skip fax numbers. street may include a suite. " +
+    "Copy text exactly as printed and use \"\" for anything the card doesn't show. Example: " +
+    "{\"first\":\"Ana\",\"last\":\"Lopez\",\"title\":\"Sales Director\",\"org\":\"Blue Harbor Inc.\",\"work\":\"(206) 555-0100\",\"cell\":\"\",\"email\":\"ana@blueharbor.com\",\"url\":\"www.blueharbor.com\",\"street\":\"12 Pier Way\",\"city\":\"Seattle\",\"region\":\"WA\",\"postal\":\"98101\",\"country\":\"\"}";
+
+  function readWithClaude(cv) {
+    return sampleP.then(function (sample) {
+      if (!sample) return null;
+      return sample.limits().then(function (lim) {
+        if (!lim || !lim.images) return null;
+        return new Promise(function (res) { cv.toBlob(res, "image/jpeg", 0.9); }).then(function (blob) {
+          say("Reading the card with Claude…"); progress(0.5);
+          return sample.json(CLAUDE_PROMPT, { images: [blob], modelTier: "quick" });
+        });
+      }).then(function (obj) {
+        if (!obj || typeof obj !== "object") return null;
+        var d = EMPTY();
+        FIELDS.forEach(function (f) { if (typeof obj[f] === "string") d[f] = obj[f].trim(); });
+        return d;
+      }, function (err) {
+        if (err && err.code === "rate_limited") say("Claude is busy for this account right now. Reading the card on this device instead…");
+        return null;
+      });
+    });
+  }
+
+  function fillScan(d, source, raw) {
+    FIELDS.forEach(function (f) { $("s_" + f).value = d[f] || ""; });
+    $("scanSource").textContent = source; $("scanSource").hidden = false;
+    $("rawText").textContent = raw || ""; $("rawWrap").hidden = !raw;
+    renderPhoneQr();
+  }
+
+  function processCard(cv) {
+    if (busy) return;
+    busy = true;
+    $("shot").src = cv.toDataURL("image/jpeg", 0.85); $("shot").hidden = false; $("viewerEmpty").hidden = true;
+    $("camBtn").disabled = true;
+    say("Looking for a QR code on the card…"); progress(0.05);
+    var finish = function () { busy = false; $("camBtn").disabled = false; progress(null); };
+
+    var data = findQr(cv);
+    if (data && /BEGIN:VCARD/i.test(data)) { fillScan(parseVCard(data), "Read from the card’s QR code", data); say("Done. The details came from the QR code on the card."); finish(); return; }
+    if (data && /^MECARD:/i.test(data)) { fillScan(parseMeCard(data), "Read from the card’s QR code", data); say("Done. The details came from the QR code on the card."); finish(); return; }
+    var qrUrl = data && /^(https?:\/\/|www\.)/i.test(data) ? data : "";
+
+    readWithClaude(cv).then(function (d) {
+      if (d) {
+        if (!d.url && qrUrl) d.url = qrUrl;
+        fillScan(d, "Read by Claude · check before saving", "");
+        say("Done. Check the details, then save the contact.");
+        return;
+      }
+      return ocr(cv).then(function (text) {
+        if (!text.trim()) { say("No text could be read. Try again closer to the card, with more light and less glare.", true); return; }
+        var d2 = parseCardText(text);
+        if (!d2.url && qrUrl) d2.url = qrUrl;
+        fillScan(d2, "Read on this device · check before saving", text.trim());
+        var found = FIELDS.filter(function (f) { return d2[f]; }).length;
+        say(found >= 3 ? "Done. Check the details, then save the contact."
+                       : "Only a little could be read. Fix the details by hand, or try another photo.", found < 3);
+      }, function () {
+        say(inClaude ? "Card reading isn’t available in this view. Open the page on your company website, or type the details in."
+                     : "The text reader couldn’t load. Check your internet connection and try again.", true);
+      });
+    }).then(finish, finish);
+  }
+
+  function renderPhoneQr() {
+    var d = read("s_");
+    var any = FIELDS.some(function (f) { return d[f].trim(); });
+    $("phoneQr").hidden = !any;
+    if (!any) return;
+    try { $("phoneQrBox").innerHTML = svgFor(makeQr(buildVCard(d)), "#000000", 2); }
+    catch (e) { $("phoneQr").hidden = true; }
+  }
+  $("sform").addEventListener("input", renderPhoneQr);
+  $("sform").addEventListener("submit", function (e) { e.preventDefault(); });
+
+  function contactSay(msg, isErr) { var s = $("contactStatus"); s.textContent = msg; s.className = "status" + (isErr ? " err" : ""); }
+
+  $("saveContactBtn").addEventListener("click", function () {
+    var d = read("s_");
+    if (!FIELDS.some(function (f) { return d[f].trim(); })) { contactSay("Scan a card or type in some details first.", true); return; }
+    var name = slug(d) + ".vcf";
+    if (inClaude) {
+      // The Claude viewer can't hand over contact files, so use the code instead.
+      renderPhoneQr();
+      contactSay("Contact files can’t be saved in this view. Scan the code below with your phone to add the contact.");
+      return;
+    }
+    try { linkDownload(name, buildVCard(d), "text/vcard"); contactSay("Saved " + name + ". Open it to add the contact."); }
+    catch (e) { contactSay("The contact file couldn’t be saved. Scan the code below with your phone instead.", true); }
+  });
+
+  $("useBtn").addEventListener("click", function () {
+    var d = read("s_");
+    if (!FIELDS.some(function (f) { return d[f].trim(); })) { contactSay("Scan a card or type in some details first.", true); return; }
+    FIELDS.forEach(function (f) { $(f).value = d[f]; });
+    $("exampleNote").hidden = true;
+    render();
+    location.hash = "make";
+    window.scrollTo(0, 0);
+  });
+
+  // ---- Views ----
+  function route() {
+    var scan = location.hash === "#scan";
+    $("viewMake").hidden = scan; $("viewScan").hidden = !scan;
+    $("tabMake").setAttribute("aria-current", scan ? "false" : "page");
+    $("tabScan").setAttribute("aria-current", scan ? "page" : "false");
+    if (!scan) stopCamera();
+  }
+  window.addEventListener("hashchange", route);
+
   var saved = null;
   try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) {}
   var source = saved || EXAMPLE;
@@ -406,7 +933,7 @@
   $("form").addEventListener("submit", function (e) { e.preventDefault(); });
   $("color").addEventListener("change", render);
   render();
-
+  route();
 })();
 </script>
 </div>
